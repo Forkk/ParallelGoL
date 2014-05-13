@@ -1,0 +1,7 @@
+# Makefile stuff
+*.d
+
+# C stuff
+*.o
+life
+

@@ -34,6 +34,9 @@ pthread_mutex_t threadsDoneMutex;
 /// A condition variable which controls when the update threads should begin the next tick.
 pthread_cond_t threadsDoneCond;
 
+/// Mutex which protects the swapGrids function.
+pthread_mutex_t swapGridsMutex;
+
 // Code
 
 void startGridUpdater(int threads)
@@ -87,9 +90,7 @@ void finishTick()
 		threadsDone = 0;
 		
 		// Finally, swap the grids.
-		char (*tGrid)[GRID_W][GRID_H] = currentGrid;
-		currentGrid = newGrid;
-		newGrid = tGrid;
+		swapGrids();
 	}
 	// All the threads aren't done yet, wait for them to finish.
 	else
@@ -111,5 +112,25 @@ void awaitTick()
 
 	// Unlock the mutex.
 	pthread_mutex_unlock(&threadsDoneMutex);
+}
+
+
+void swapGrids()
+{
+	lockSwapGrids();
+	char (*tGrid)[GRID_W][GRID_H] = currentGrid;
+	currentGrid = newGrid;
+	newGrid = tGrid;
+	unlockSwapGrids();
+}
+
+void lockSwapGrids()
+{
+	pthread_mutex_lock(&swapGridsMutex);
+}
+
+void unlockSwapGrids()
+{
+	pthread_mutex_unlock(&swapGridsMutex);
 }
 

@@ -1,6 +1,6 @@
 CC=/bin/gcc
 CFLAGS=-std=c11 -c -Wall -g
-LDFLAGS=-l glut -l GL -lpthread
+LDFLAGS=-lglut -lGL -lpthread -lm
 
 EXECUTABLE=life
 

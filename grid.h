@@ -3,8 +3,8 @@
 
 #pragma once
 
-#define GRID_W 1000
-#define GRID_H 500
+#define GRID_W 2000
+#define GRID_H 1000
 
 // We have two grids, the current grid (which is the grid for the current frame) and the new grid.
 // Each grid alternates being the current grid and new grid.

@@ -19,3 +19,12 @@ void lockSwapGrids();
 /// Unlocks the swapGrids mutex, preventing the grids from swapping.
 void unlockSwapGrids();
 
+
+/// Manually locks all update threads at the end of the current tick.
+/// If the threads are currently in the process of updating the grid,
+/// this function will block until they are done.
+void lockTick();
+
+/// Unlocks after lockTick.
+void unlockTick();
+

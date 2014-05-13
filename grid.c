@@ -28,17 +28,27 @@ void updateCell(int x, int y)
 {
 	char state = cGrid[x][y];
 
+	int u = y-1;
+	int d = y+1;
+	int l = x-1;
+	int r = x+1;
+
+	if (u <  0     ) u = GRID_H-1;
+	if (d >= GRID_H) d = 0;
+	if (l <  0     ) l = GRID_W-1;
+	if (r >= GRID_W) r = 0;
+
 	int neighbors = 0;
 	// Count surrounding cells.
-	if (y > 0       && cGrid[x][y-1]) neighbors++;
-	if (y < GRID_H  && cGrid[x][y+1]) neighbors++;
-	if (x > 0       && cGrid[x-1][y]) neighbors++;
-	if (x < GRID_W  && cGrid[x+1][y]) neighbors++;
+	if (cGrid[x][u]) neighbors++;
+	if (cGrid[x][d]) neighbors++;
+	if (cGrid[l][y]) neighbors++;
+	if (cGrid[r][y]) neighbors++;
 
-	if (x > 0       && y > 0       && cGrid[x-1][y-1]) neighbors++;
-	if (x < GRID_W  && y < GRID_H  && cGrid[x+1][y+1]) neighbors++;
-	if (x > 0       && y < GRID_H  && cGrid[x-1][y+1]) neighbors++;
-	if (x < GRID_W  && y > 0       && cGrid[x+1][y-1]) neighbors++;
+	if (cGrid[l][u]) neighbors++;
+	if (cGrid[r][d]) neighbors++;
+	if (cGrid[l][d]) neighbors++;
+	if (cGrid[r][u]) neighbors++;
 
 	// Apply the rules.
 	if (state)

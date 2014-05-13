@@ -3,6 +3,7 @@
 
 #include "grid.h"
 #include "grid_updater.h"
+#include "life_file.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -17,7 +18,9 @@ int screenHeight = 0;
 // This can prevent small rendering artifacts, but will slow down the
 // game if the rendering system can't render a frame faster than the
 // update threads.
-bool frameLock = true;
+bool frameLock = false;
+
+struct LifeFile lf;
 
 void renderScene();
 void renderCell(int x, int y);
@@ -37,6 +40,7 @@ int main(int argc, char** argv)
 	{
 		char* file = argv[1];
 		printf("Loading scene: %s\n", file);
+		readLifeFile(file, &lf);
 	}
 	// Randomize the grid.
 	else randomizeGrid();
@@ -54,8 +58,8 @@ int main(int argc, char** argv)
 	glutMouseFunc(onMouseClick);
 	glutMotionFunc(onMouse);
 
-	// Run grid updater with 10 threads.
-	startGridUpdater(10);
+	// Run grid updater with 20 threads.
+	startGridUpdater(20);
 
 	// Start GLUT.
 	glutMainLoop();
@@ -64,16 +68,16 @@ int main(int argc, char** argv)
 void renderScene()
 {
 	// Wait for a tick to finish.
-	awaitTick();
+	//awaitTick();
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// Lock the grids.
-	lockSwapGrids();
-	for (int x = 0; x < GRID_W; x++)
-		for (int y = 0; y < GRID_H; y++)
+	if (frameLock) lockSwapGrids();
+	for (int y = 0; y < GRID_H; y++)
+		for (int x = 0; x < GRID_W; x++)
 			renderCell(x, y);
-	unlockSwapGrids();
+	if (frameLock) unlockSwapGrids();
 	
 	// Swap buffers
 	glutSwapBuffers();
@@ -87,8 +91,8 @@ void renderCell(int x, int y)
 	char state = cGrid[x][y];
 	if (!state) return;
 
-	float sx = (x * cellw) - 1;
-	float sy = (y * cellh) - 1;
+	float sx = ( x * cellw) - 1;
+	float sy = (-y * cellh) + 1;
 	float sx2 = sx + cellw;
 	float sy2 = sy + cellh;
 
@@ -98,7 +102,6 @@ void renderCell(int x, int y)
 
 void onReshape(int w, int h)
 {
-	printf("Reshape %i, %i\n", w, h);
 	screenWidth = w;
 	screenHeight = h;
 	glViewport(0, 0, w, h);
@@ -116,14 +119,14 @@ void onMouse(int x, int y)
 	// First, divide by width and height to get the position in terms of fractions of the screen.
 	// Next, multiply by the cell size.
 	float fx = (float)x / (float)screenWidth / cellw * 2;
-	float fy = (float)y / (float)screenHeight / cellh * -2;
+	float fy = (float)y / (float)screenHeight / cellh * 2;
 
-	// The cell position is 
-	printf("Mouse: %f, %f\n", (fx), (fy));
-	cGrid[(int)floor(fx-1)][(int)floor(fy  )] = 1;
-	cGrid[(int)floor(fx+1)][(int)floor(fy  )] = 1;
-	cGrid[(int)floor(fx+1)][(int)floor(fy+1)] = 1;
-	cGrid[(int)floor(fx  )][(int)floor(fy+1)] = 1;
-	cGrid[(int)floor(fx+1)][(int)floor(fy-1)] = 1;
+//	cGrid[(int)floor(fx-1)][(int)floor(fy  )] = 1;
+//	cGrid[(int)floor(fx+1)][(int)floor(fy  )] = 1;
+//	cGrid[(int)floor(fx+1)][(int)floor(fy+1)] = 1;
+//	cGrid[(int)floor(fx  )][(int)floor(fy+1)] = 1;
+//	cGrid[(int)floor(fx+1)][(int)floor(fy-1)] = 1;
+
+	insertLifeFile(&lf, fx, fy);
 }
 

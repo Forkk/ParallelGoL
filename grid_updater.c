@@ -4,6 +4,7 @@
 
 #include <stdlib.h>
 #include <stdio.h>
+#include <stdbool.h>
 #include <pthread.h>
 
 // Private declarations
@@ -29,6 +30,12 @@ int threadCount = 0;
 
 /// A mutex locked counter which counts the number of threads that have finished the current tick.
 int threadsDone = 0;
+/// If true, the threads will be locked at the end of their tick until set to false.
+bool ticksPaused = false;
+/// Condition variable for waiting for threads to pause.
+pthread_cond_t pauseCond;
+pthread_cond_t unpauseCond;
+
 /// Mutex which locks the threadsDone counter.
 pthread_mutex_t threadsDoneMutex;
 /// A condition variable which controls when the update threads should begin the next tick.
@@ -73,23 +80,32 @@ void* gridUpdateThread(void* p)
 	}
 }
 
+
+// Internal function. Unlocks the threads at the end of the tick.
+void unlockTickEnd()
+{
+}
+
 void finishTick()
 {
-	// First, we need to lock the mutex.
 	pthread_mutex_lock(&threadsDoneMutex);
 
-	// Next, we increment the counter.
 	threadsDone++;
 
 	// If all of the threads are done now, begin the next tick.
 	if (threadsDone >= threadCount)
 	{
-		// First, broadcast that the tick is finished.
+		if (ticksPaused)
+		{
+			pthread_cond_signal(&pauseCond); // Let the main thread know everything's paused.
+			pthread_cond_wait(&unpauseCond, &threadsDoneMutex);
+		}
+
+		// Unlock the threads.
 		pthread_cond_broadcast(&threadsDoneCond);
+
 		// Reset the counter.
 		threadsDone = 0;
-		
-		// Finally, swap the grids.
 		swapGrids();
 	}
 	// All the threads aren't done yet, wait for them to finish.
@@ -98,19 +114,33 @@ void finishTick()
 		pthread_cond_wait(&threadsDoneCond, &threadsDoneMutex);
 	}
 
-	// Be sure to unlock the mutex.
 	pthread_mutex_unlock(&threadsDoneMutex);
 }
 
 void awaitTick()
 {
-	// Lock the mutex.
 	pthread_mutex_lock(&threadsDoneMutex);
-	
 	// Wait for the threads to finish.
 	pthread_cond_wait(&threadsDoneCond, &threadsDoneMutex);
+	pthread_mutex_unlock(&threadsDoneMutex);
+}
 
-	// Unlock the mutex.
+
+void lockTick()
+{
+	pthread_mutex_lock(&threadsDoneMutex);
+	ticksPaused = true;
+	// Wait for threads to pause.
+	pthread_cond_wait(&pauseCond, &threadsDoneMutex);
+	pthread_mutex_unlock(&threadsDoneMutex);
+}
+
+void unlockTick()
+{
+	pthread_mutex_lock(&threadsDoneMutex);
+	ticksPaused = false;
+	// Unlock the threads.
+	pthread_cond_broadcast(&unpauseCond);
 	pthread_mutex_unlock(&threadsDoneMutex);
 }
 

@@ -115,7 +115,7 @@ float cellh = 0;
 void renderCell(int x, int y)
 {
 	char state = cGrid[x][y];
-	if (!state) return;
+	if (!(state & 0b10000000)) return;
 
 	// Get the screen coordinates for the cell.
 	point_t pos = gridToScreen(x, y);
@@ -151,13 +151,13 @@ void onMouse(int x, int y)
 	point_t cell = screenToGrid(x, y);
 
 	lockTick();
-	nGrid[(int)floor(cell.x-1)][(int)floor(cell.y  )] = 1;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y  )] = 1;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y+1)] = 1;
-	nGrid[(int)floor(cell.x  )][(int)floor(cell.y+1)] = 1;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y-1)] = 1;
+	nGrid[(int)floor(cell.x-1)][(int)floor(cell.y  )] |= 0b10000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y  )] |= 0b10000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y+1)] |= 0b10000000;
+	nGrid[(int)floor(cell.x  )][(int)floor(cell.y+1)] |= 0b10000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y-1)] |= 0b10000000;
 	unlockTick();
-	printf("Place at %d, %d\n", (int)floor(cell.x), (int)floor(cell.y));
+	//printf("Place at %d, %d\n", (int)floor(cell.x), (int)floor(cell.y));
 
 	//insertLifeFile(&lf, cell.x, cell.y);
 }

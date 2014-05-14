@@ -25,6 +25,9 @@ void* gridUpdateThread(void* param);
 /// Uses a mutex, conditional, and counter to synchronize threads.
 void finishTick();
 
+/// Blocks a thread, waiting for the other threads to finish counting neighbors.
+void finishCount();
+
 /// The total number of threads.
 int threadCount = 0;
 
@@ -40,6 +43,11 @@ pthread_cond_t unpauseCond;
 pthread_mutex_t threadsDoneMutex;
 /// A condition variable which controls when the update threads should begin the next tick.
 pthread_cond_t threadsDoneCond;
+
+// Same as threadsDone, but for syncing neighbor counting.
+int countsDone;
+pthread_mutex_t countsDoneMutex;
+pthread_cond_t countsDoneCond;
 
 /// Mutex which protects the swapGrids function.
 pthread_mutex_t swapGridsMutex;
@@ -71,13 +79,25 @@ void* gridUpdateThread(void* p)
 	struct UpdateThreadParams *params = (struct UpdateThreadParams*)p;
 	while (1)
 	{
+		// TODO: These loops can probably be combined.
 		// Update the thread's cells.
 		for (int x = params->min; x < params->max; x++)
 		{
 			for (int y = 0; y < GRID_H; y++)
 			{
-				// Only update if the cell is active.
-				if (cActGrid[x][y]) updateCell(x, y);
+				updateNeighbors(x, y);
+			}
+		}
+
+		// Wait for other threads to finish counting neighbors.
+		finishCount();
+
+		// Update the life bits.
+		for (int x = params->min; x < params->max; x++)
+		{
+			for (int y = 0; y < GRID_H; y++)
+			{
+				updateLife(x, y);
 			}
 		}
 		// Synchronize with the other update threads.
@@ -85,10 +105,24 @@ void* gridUpdateThread(void* p)
 	}
 }
 
-
-// Internal function. Unlocks the threads at the end of the tick.
-void unlockTickEnd()
+void finishCount()
 {
+	pthread_mutex_lock(&countsDoneMutex);
+
+	countsDone++;
+	
+	if (countsDone >= threadCount)
+	{
+		// Carry on.
+		pthread_cond_broadcast(&countsDoneCond);
+		countsDone = 0;
+	}
+	else
+	{
+		pthread_cond_wait(&countsDoneCond, &countsDoneMutex);
+	}
+
+	pthread_mutex_unlock(&countsDoneMutex);
 }
 
 void finishTick()
@@ -159,15 +193,14 @@ void swapGrids()
 	currentGrid = newGrid;
 	newGrid = tGrid;
 
-	// Swap the activity grids.
-	char (*tAGrid)[GRID_W][GRID_H] = cActiveGrid;
-	cActiveGrid = nActiveGrid;
-	nActiveGrid = tAGrid;
-
-	// Clear the new activity grid.
+	// Clear the new grid.
 	for (int x = 0; x < GRID_W; x++)
+	{
 		for (int y = 0; y < GRID_H; y++)
-			nActGrid[x][y] = 0;
+		{
+			nGrid[x][y] = 0;
+		}
+	}
 
 	unlockSwapGrids();
 }

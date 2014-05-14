@@ -11,9 +11,19 @@
 char (*currentGrid)[GRID_W][GRID_H];
 char (*newGrid)[GRID_W][GRID_H];
 
+// For optimization, we have a second pair of grids which keep track of active cells.
+// If a cell's state changes, all of its neighbors are marked as active.
+char (*cActiveGrid)[GRID_W][GRID_H];
+char (*nActiveGrid)[GRID_W][GRID_H];
+
+
 // Macros for nice and easy access to grid pointers.
 #define cGrid (*currentGrid)
 #define nGrid (*newGrid)
+
+#define cActGrid (*cActiveGrid)
+#define nActGrid (*nActiveGrid)
+
 
 /// Initializes the grid, allocating its memory
 void initGrid();

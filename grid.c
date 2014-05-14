@@ -8,6 +8,13 @@ void initGrid()
 	// I'm not concerned with it right now, since it's only ever done once...
 	currentGrid = malloc(sizeof(char)*GRID_W*GRID_H);
 	newGrid = malloc(sizeof(char)*GRID_W*GRID_H);
+	cActiveGrid = malloc(sizeof(char)*GRID_W*GRID_H);
+	nActiveGrid = malloc(sizeof(char)*GRID_W*GRID_H);
+
+	// Activate all the cells.
+	for (int x = 0; x < GRID_W; x++)
+		for (int y = 0; y < GRID_H; y++)
+			cActGrid[x][y] = 1;
 }
 
 void randomizeGrid()
@@ -26,6 +33,9 @@ void randomizeGrid()
 
 void updateCell(int x, int y)
 {
+	// Skip inactive cells
+	if (!cActGrid[x][y]) return;
+
 	char state = cGrid[x][y];
 
 	int u = y-1;
@@ -51,20 +61,38 @@ void updateCell(int x, int y)
 	if (cGrid[r][u]) neighbors++;
 
 	// Apply the rules.
+	char newState = 0;
 	if (state)
 	{
 		// Any live cell with fewer than two live neighbours dies, as if caused by under-population.
 		// Any live cell with more than three live neighbours dies, as if by overcrowding.
 		if (neighbors < 2 || neighbors > 3)
-			nGrid[x][y] = 0;
+			newState = 0;
 		// Any live cell with two or three live neighbours lives on to the next generation.
 		else
-			nGrid[x][y] = state;
+			newState = state;
 	}
 	// Any dead cell with exactly three live neighbours becomes a live cell, as if by reproduction.
 	else if (neighbors == 3)
-		nGrid[x][y] = 1;
+		newState = 1;
 	else
-		nGrid[x][y] = state;
+		newState = state;
+
+	nGrid[x][y] = newState;
+	if (state != newState)
+	{
+		// Activate the cell and its neighbors.
+		nActGrid[x][y] = 1;
+
+		nActGrid[x][u] = 1;
+		nActGrid[x][d] = 1;
+		nActGrid[l][y] = 1;
+		nActGrid[r][y] = 1;
+
+		nActGrid[l][u] = 1;
+		nActGrid[l][d] = 1;
+		nActGrid[r][u] = 1;
+		nActGrid[r][d] = 1;
+	}
 }
 

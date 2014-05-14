@@ -73,8 +73,13 @@ void* gridUpdateThread(void* p)
 	{
 		// Update the thread's cells.
 		for (int x = params->min; x < params->max; x++)
+		{
 			for (int y = 0; y < GRID_H; y++)
-				updateCell(x, y);
+			{
+				// Only update if the cell is active.
+				if (cActGrid[x][y]) updateCell(x, y);
+			}
+		}
 		// Synchronize with the other update threads.
 		finishTick();
 	}
@@ -148,9 +153,22 @@ void unlockTick()
 void swapGrids()
 {
 	lockSwapGrids();
+
+	// Swap the dead/alive grids.
 	char (*tGrid)[GRID_W][GRID_H] = currentGrid;
 	currentGrid = newGrid;
 	newGrid = tGrid;
+
+	// Swap the activity grids.
+	char (*tAGrid)[GRID_W][GRID_H] = cActiveGrid;
+	cActiveGrid = nActiveGrid;
+	nActiveGrid = tAGrid;
+
+	// Clear the new activity grid.
+	for (int x = 0; x < GRID_W; x++)
+		for (int y = 0; y < GRID_H; y++)
+			nActGrid[x][y] = 0;
+
 	unlockSwapGrids();
 }
 

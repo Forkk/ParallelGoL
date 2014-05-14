@@ -4,7 +4,7 @@ LDFLAGS=-lglut -lGL -lpthread -lm
 
 EXECUTABLE=life
 
-SOURCES=main.c grid.c grid_updater.c life_file.c
+SOURCES=main.c grid.c grid_updater.c life_file.c args.c
 OBJECTS=$(SOURCES:.c=.o)
 DEPS=$(SOURCES:.c=.d)
 

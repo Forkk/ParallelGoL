@@ -1,6 +1,9 @@
 // Main source file.
 // Initializes and starts the program.
 
+#include "main.h"
+
+#include "args.h"
 #include "grid.h"
 #include "grid_updater.h"
 #include "life_file.h"
@@ -14,36 +17,27 @@
 int screenWidth = 0;
 int screenHeight = 0;
 
-// If true, locks the gridSwap function with a mutex while rendering.
-// This can prevent small rendering artifacts, but will slow down the
-// game if the rendering system can't render a frame faster than the
-// update threads.
-bool frameLock = false;
-
 struct LifeFile lf;
-
-void renderScene();
-void renderCell(int x, int y);
-void onReshape(int w, int h);
-void onMouse(int x, int y);
-void onMouseClick(int, int, int x, int y);
 
 int main(int argc, char** argv)
 {
 	glutInit(&argc, argv);
 
+	// Process arguments.
+	processArgs(argc, argv);
+
 	// Initialize the grid.
 	initGrid();
 
 	// If we have an argument, load a file from it.
-	if (argc > 1)
-	{
-		char* file = argv[1];
-		printf("Loading scene: %s\n", file);
-		readLifeFile(file, &lf);
-	}
+//	if (argc > 1)
+//	{
+//		char* file = argv[1];
+//		printf("Loading scene: %s\n", file);
+//		readLifeFile(file, &lf);
+//	}
 	// Randomize the grid.
-	else randomizeGrid();
+	if (opts.randomize) randomizeGrid();
 	
 
 	// Set up GLUT.
@@ -58,8 +52,10 @@ int main(int argc, char** argv)
 	glutMouseFunc(onMouseClick);
 	glutMotionFunc(onMouse);
 
-	// Run grid updater with 20 threads.
-	startGridUpdater(20);
+	printf("Running updater with %i threads.\n", opts.threads);
+
+	// Run the grid updater.
+	startGridUpdater(opts.threads);
 
 	// Start GLUT.
 	glutMainLoop();
@@ -73,11 +69,11 @@ void renderScene()
 	glClear(GL_COLOR_BUFFER_BIT);
 
 	// Lock the grids.
-	if (frameLock) lockSwapGrids();
+	if (opts.frameLock) lockSwapGrids();
 	for (int y = 0; y < GRID_H; y++)
 		for (int x = 0; x < GRID_W; x++)
 			renderCell(x, y);
-	if (frameLock) unlockSwapGrids();
+	if (opts.frameLock) unlockSwapGrids();
 	
 	// Swap buffers
 	glutSwapBuffers();

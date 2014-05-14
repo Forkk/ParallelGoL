@@ -9,6 +9,8 @@
 // longest row. Any rows which are too short will be expanded and
 // dead cells will be inserted.
 
+#pragma once
+
 struct LifeFile
 {
     int gridW;

@@ -26,6 +26,9 @@ int main(int argc, char** argv)
 	// Process arguments.
 	processArgs(argc, argv);
 
+	if (opts.frameLock)
+	printf("Frame lock is on.\n");
+
 	// Initialize the grid.
 	initGrid();
 
@@ -63,10 +66,12 @@ int main(int argc, char** argv)
 
 void renderScene()
 {
-	// Wait for a tick to finish.
-	//awaitTick();
-
 	glClear(GL_COLOR_BUFFER_BIT);
+	
+	glMatrixMode(GL_PROJECTION);
+	glLoadIdentity();
+	gluOrtho2D(0, screenWidth, 0, screenHeight);
+	glViewport(0, 0, screenWidth, screenHeight);
 
 	// Lock the grids.
 	if (opts.frameLock) lockSwapGrids();
@@ -75,32 +80,63 @@ void renderScene()
 			renderCell(x, y);
 	if (opts.frameLock) unlockSwapGrids();
 	
+	// Draw some text.
+	renderText(8, screenHeight - 24, "Testing");
+
 	// Swap buffers
 	glutSwapBuffers();
 }
 
-float cellw = 2.0f / GRID_W;
-float cellh = 2.0f / GRID_H;
+// Renders the given null terminated string at the given position.
+void renderText(int x, int y, const char* text)
+{
+	glPushMatrix();
+
+	float fx = (float)x;
+	float fy = (float)y;
+
+	glTranslatef(fx, fy, 0.0);
+	glScalef(0.1, 0.1, 0.1);
+	
+	for (int i = 0; text[i] != '\0'; i++)
+	{
+		glTranslatef(32, 0.0, 0.0);
+		glColor3f(0.8, 0.0, 0.0);
+		int ch = text[i];
+		glutStrokeCharacter(GLUT_STROKE_MONO_ROMAN, ch);
+	}
+
+	glPopMatrix();
+}
+
+float cellw = 0;
+float cellh = 0;
 
 void renderCell(int x, int y)
 {
 	char state = cGrid[x][y];
 	if (!state) return;
 
-	float sx = ( x * cellw) - 1;
-	float sy = (-y * cellh) + 1;
-	float sx2 = sx + cellw;
-	float sy2 = sy + cellh;
+	// Get the screen coordinates for the cell.
+	point_t pos = gridToScreen(x, y);
 
 	glColor3f(0.0f, 0.0f, 0.0f);
-	glRectf(sx, sy, sx2, sy2);
+	glBegin(GL_QUADS);
+		glVertex2f(pos.x        , pos.y        );
+		glVertex2f(pos.x        , pos.y + cellw);
+		glVertex2f(pos.x + cellh, pos.y + cellw);
+		glVertex2f(pos.x + cellh, pos.y        );
+	glEnd();
 }
 
 void onReshape(int w, int h)
 {
 	screenWidth = w;
 	screenHeight = h;
-	glViewport(0, 0, w, h);
+
+	cellw = (float)w / GRID_W;
+	cellh = (float)h / GRID_H;
+	printf("Screen size: %d, %d - Cell size: %f, %f\n", w, h, cellw, cellh);
 }
 
 void onMouseClick(int btn, int state, int x, int y)
@@ -112,17 +148,33 @@ void onMouseClick(int btn, int state, int x, int y)
 void onMouse(int x, int y)
 {
 	// Find the cell at the given position.
-	// First, divide by width and height to get the position in terms of fractions of the screen.
-	// Next, multiply by the cell size.
-	float fx = (float)x / (float)screenWidth / cellw * 2;
-	float fy = (float)y / (float)screenHeight / cellh * 2;
+	point_t cell = screenToGrid(x, y);
 
-//	cGrid[(int)floor(fx-1)][(int)floor(fy  )] = 1;
-//	cGrid[(int)floor(fx+1)][(int)floor(fy  )] = 1;
-//	cGrid[(int)floor(fx+1)][(int)floor(fy+1)] = 1;
-//	cGrid[(int)floor(fx  )][(int)floor(fy+1)] = 1;
-//	cGrid[(int)floor(fx+1)][(int)floor(fy-1)] = 1;
+	lockTick();
+	nGrid[(int)floor(cell.x-1)][(int)floor(cell.y  )] = 1;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y  )] = 1;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y+1)] = 1;
+	nGrid[(int)floor(cell.x  )][(int)floor(cell.y+1)] = 1;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y-1)] = 1;
+	unlockTick();
+	printf("Place at %d, %d\n", (int)floor(cell.x), (int)floor(cell.y));
 
-	insertLifeFile(&lf, fx, fy);
+	//insertLifeFile(&lf, cell.x, cell.y);
+}
+
+point_t screenToGrid(float x, float y)
+{
+	point_t pos;
+	pos.x = x / cellw;
+	pos.y = screenHeight + y / cellh;
+	return pos;
+}
+
+point_t gridToScreen(float x, float y)
+{
+	point_t pos;
+	pos.x = x * cellw;
+	pos.y = screenHeight - y * cellh;
+	return pos;
 }
 

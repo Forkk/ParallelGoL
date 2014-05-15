@@ -5,3 +5,7 @@
 *.o
 life
 
+# Profiling
+gmon.out
+*.out.*
+

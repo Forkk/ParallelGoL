@@ -28,6 +28,9 @@ void finishTick();
 /// Blocks a thread, waiting for the other threads to finish counting neighbors.
 void finishCount();
 
+/// Blocks a thread, waiting for the other threads to finish initializing the next grid.
+void finishTickInit();
+
 /// The total number of threads.
 int threadCount = 0;
 
@@ -45,9 +48,14 @@ pthread_mutex_t threadsDoneMutex;
 pthread_cond_t threadsDoneCond;
 
 // Same as threadsDone, but for syncing neighbor counting.
-int countsDone;
+int countsDone = 0;
 pthread_mutex_t countsDoneMutex;
 pthread_cond_t countsDoneCond;
+
+// Same as threadsDone, but for syncing initializing the next grid.
+int initsDone = 0;
+pthread_mutex_t initsDoneMutex;
+pthread_cond_t initsDoneCond;
 
 /// Mutex which protects the swapGrids function.
 pthread_mutex_t swapGridsMutex;
@@ -79,11 +87,10 @@ void* gridUpdateThread(void* p)
 	struct UpdateThreadParams *params = (struct UpdateThreadParams*)p;
 	while (1)
 	{
-		// TODO: These loops can probably be combined.
 		// Update the thread's cells.
-		for (int x = params->min; x < params->max; x++)
+		for (int y = 0; y < GRID_H; y++)
 		{
-			for (int y = 0; y < GRID_H; y++)
+			for (int x = params->min; x < params->max; x++)
 			{
 				updateNeighbors(x, y);
 			}
@@ -93,16 +100,49 @@ void* gridUpdateThread(void* p)
 		finishCount();
 
 		// Update the life bits.
-		for (int x = params->min; x < params->max; x++)
+		for (int y = 0; y < GRID_H; y++)
 		{
-			for (int y = 0; y < GRID_H; y++)
+			for (int x = params->min; x < params->max; x++)
 			{
-				updateLife(x, y);
+				// If the cell's neighbors haven't changed, ignore it.
+				if (nGrid[x][y] & 0b00100000) updateLife(x, y);
 			}
 		}
 		// Synchronize with the other update threads.
 		finishTick();
+
+		// Prepare for the next tick.
+		// We do this here because we don't want to do it on the first tick.
+		for (int y = 0; y < GRID_H; y++)
+		{
+			for (int x = params->min; x < params->max; x++)
+			{
+				nGrid[x][y] = cGrid[x][y];
+			}
+		}
+
+		finishTickInit();
 	}
+}
+
+void finishTickInit()
+{
+	pthread_mutex_lock(&initsDoneMutex);
+
+	initsDone++;
+	
+	if (initsDone >= threadCount)
+	{
+		// Carry on.
+		pthread_cond_broadcast(&initsDoneCond);
+		initsDone = 0;
+	}
+	else
+	{
+		pthread_cond_wait(&initsDoneCond, &initsDoneMutex);
+	}
+
+	pthread_mutex_unlock(&initsDoneMutex);
 }
 
 void finishCount()
@@ -192,15 +232,6 @@ void swapGrids()
 	char (*tGrid)[GRID_W][GRID_H] = currentGrid;
 	currentGrid = newGrid;
 	newGrid = tGrid;
-
-	// Clear the new grid.
-	for (int x = 0; x < GRID_W; x++)
-	{
-		for (int y = 0; y < GRID_H; y++)
-		{
-			nGrid[x][y] = 0;
-		}
-	}
 
 	unlockSwapGrids();
 }

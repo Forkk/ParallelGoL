@@ -15,6 +15,7 @@ void renderText(int x, int y, const char* text);
 void onReshape(int w, int h);
 void onMouse(int x, int y);
 void onMouseClick(int, int, int x, int y);
+void onKeyboard(unsigned char key, int x, int y);
 
 // Misc utility
 typedef struct point

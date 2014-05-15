@@ -10,9 +10,9 @@
 // Each grid alternates being the current grid and new grid.
 // The data in each cell is as follows:
 // The first bit indicates whether the cell is alive or dead.
-// The second bit indicates whether the cell is active or not (currently not used).
-// The third bit contains the cell's previous life state.
-// The rest of the bits indicate how many neighbors the cell has.
+// The second bit indicates whether the cell's life state changed on the last tick.
+// The third bit indicates whether any of the cell's neighbors changed on the current tick.
+// The last four bits count how many neighbors the cell has.
 char (*currentGrid)[GRID_W][GRID_H];
 char (*newGrid)[GRID_W][GRID_H];
 

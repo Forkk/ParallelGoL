@@ -54,6 +54,7 @@ int main(int argc, char** argv)
 	glutReshapeFunc(onReshape);
 	glutMouseFunc(onMouseClick);
 	glutMotionFunc(onMouse);
+	glutKeyboardFunc(onKeyboard);
 
 	printf("Running updater with %i threads.\n", opts.threads);
 
@@ -75,8 +76,8 @@ void renderScene()
 
 	// Lock the grids.
 	if (opts.frameLock) lockSwapGrids();
-	for (int y = 0; y < GRID_H; y++)
-		for (int x = 0; x < GRID_W; x++)
+	for (int x = 0; x < GRID_W; x++)
+		for (int y = 0; y < GRID_H; y++)
 			renderCell(x, y);
 	if (opts.frameLock) unlockSwapGrids();
 	
@@ -151,15 +152,29 @@ void onMouse(int x, int y)
 	point_t cell = screenToGrid(x, y);
 
 	lockTick();
-	nGrid[(int)floor(cell.x-1)][(int)floor(cell.y  )] |= 0b10000000;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y  )] |= 0b10000000;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y+1)] |= 0b10000000;
-	nGrid[(int)floor(cell.x  )][(int)floor(cell.y+1)] |= 0b10000000;
-	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y-1)] |= 0b10000000;
+	nGrid[(int)floor(cell.x-1)][(int)floor(cell.y  )] |= 0b11000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y  )] |= 0b11000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y+1)] |= 0b11000000;
+	nGrid[(int)floor(cell.x  )][(int)floor(cell.y+1)] |= 0b11000000;
+	nGrid[(int)floor(cell.x+1)][(int)floor(cell.y-1)] |= 0b11000000;
 	unlockTick();
 	//printf("Place at %d, %d\n", (int)floor(cell.x), (int)floor(cell.y));
 
 	//insertLifeFile(&lf, cell.x, cell.y);
+}
+
+void onKeyboard(unsigned char key, int x, int y)
+{
+	// Exit on escape.
+	switch (key)
+	{
+		case 27:
+			exit(0);
+			break;
+
+		default:
+			break;
+	}
 }
 
 point_t screenToGrid(float x, float y)

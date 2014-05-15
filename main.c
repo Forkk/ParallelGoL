@@ -124,9 +124,9 @@ void renderCell(int x, int y)
 	glColor3f(0.0f, 0.0f, 0.0f);
 	glBegin(GL_QUADS);
 		glVertex2f(pos.x        , pos.y        );
-		glVertex2f(pos.x        , pos.y + cellw);
-		glVertex2f(pos.x + cellh, pos.y + cellw);
-		glVertex2f(pos.x + cellh, pos.y        );
+		glVertex2f(pos.x        , pos.y + cellh);
+		glVertex2f(pos.x + cellw, pos.y + cellh);
+		glVertex2f(pos.x + cellw, pos.y        );
 	glEnd();
 }
 

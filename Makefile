@@ -6,7 +6,6 @@ EXECUTABLE=life
 
 SOURCES=main.c grid.c grid_updater.c life_file.c args.c
 OBJECTS=$(SOURCES:.c=.o)
-DEPS=$(SOURCES:.c=.d)
 
 all:  life
 
@@ -14,20 +13,14 @@ $(EXECUTABLE): $(OBJECTS)
 	$(CC) $(LDFLAGS) $^ -o $@
 
 %.o: %.c
-	$(CC) $(CFLAGS) -c $*.c
+	$(CC)  $(CFLAGS) -c  $*.c -o $*.o
+	@$(CC) $(CFLAGS) -MM $*.c  > $*.d
 
 clean:
-	rm -f *.o $(EXECUTABLE)
+	rm -f *.{o,d} $(EXECUTABLE)
 
-distclean:
-	rm -f *.d
 
-# FIXME: This should run before anything else, since the makefile needs these files.
-%.d: %.c
-	@set -e; rm -f $@; \
-		$(CC) -MM $(CFLAGS) $< > $@.$$$$; \
-		sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' < $@.$$$$ > $@; \
-		rm -f $@.$$$$
+-include $(OBJECTS:.o=.d)
 
-include $(DEPS)
+.PHONY: clean
 

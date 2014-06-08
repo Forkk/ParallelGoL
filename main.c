@@ -82,7 +82,9 @@ void renderScene()
 	if (opts.frameLock) unlockSwapGrids();
 	
 	// Draw some text.
-	renderText(8, screenHeight - 24, "Testing");
+	char* tpsAvg = malloc(42);
+	sprintf(tpsAvg, "TPS: %d", (int)tpsAverage);
+	renderText(8, screenHeight - 24, tpsAvg);
 
 	// Swap buffers
 	glutSwapBuffers();

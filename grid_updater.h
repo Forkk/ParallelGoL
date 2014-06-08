@@ -28,3 +28,6 @@ void lockTick();
 /// Unlocks after lockTick.
 void unlockTick();
 
+/// The average number of ticks per second.
+extern float tpsAverage;
+

@@ -1,6 +1,6 @@
 CC=/bin/gcc
-CFLAGS=-std=c11 -c -Wall -g
-LDFLAGS=-lglut -lGL -lGLU -lpthread -lm
+CFLAGS=-std=c11 -c -Wall -g -D_POSIX_C_SOURCE=200112L
+LDFLAGS=-lglut -lGL -lGLU -lpthread -lm -lrt
 
 EXECUTABLE=life
 

@@ -7,6 +7,8 @@
 #include <stdbool.h>
 #include <pthread.h>
 
+#include <time.h>
+
 // Private declarations
 
 // TODO: Keep a list of threads somewhere.
@@ -60,10 +62,24 @@ pthread_cond_t initsDoneCond;
 /// Mutex which protects the swapGrids function.
 pthread_mutex_t swapGridsMutex;
 
+
+/// The Unix time the last tick was finished.
+time_t lastTick;
+
+// The number of ticks to average when determining average TPS.
+#define TPS_AVERAGE_TICKS 20
+/// Array of ticks per second for the last few ticks.
+float tpsArray[TPS_AVERAGE_TICKS];
+int tpsArrayPos = 0;
+
+/// Average ticks per second over the last 20 frames.
+float tpsAverage;
+
 // Code
 
 void startGridUpdater(int threads)
 {
+	for (int i = 0; i < TPS_AVERAGE_TICKS; i++) tpsArray[i] = 0;
 	threadCount = threads;
 	// Each thread gets an even portion of the grid.
 	int rangeSize = GRID_W / threads;
@@ -182,6 +198,24 @@ void finishTick()
 
 		// Unlock the threads.
 		pthread_cond_broadcast(&threadsDoneCond);
+
+		// Recalculate the ticks per second.
+		struct timespec now;
+		clock_gettime(CLOCK_MONOTONIC_COARSE, &now);
+		// TPS = 1000000 / (last tick duration in nanoseconds)
+		float cTps = 1000000000 / (float)(now.tv_nsec - lastTick);
+		// Add current TPS to the average list.
+		tpsArray[tpsArrayPos] = cTps;
+		tpsArrayPos++;
+		if (tpsArrayPos >= TPS_AVERAGE_TICKS) tpsArrayPos = 0;
+
+		float avgTotal = 0;
+		for (int i = 0; i < TPS_AVERAGE_TICKS; i++)
+			avgTotal += tpsArray[i];
+		tpsAverage = avgTotal / (float)TPS_AVERAGE_TICKS;
+
+		// Update the timestamp.
+		lastTick = now.tv_nsec;
 
 		// Reset the counter.
 		threadsDone = 0;
